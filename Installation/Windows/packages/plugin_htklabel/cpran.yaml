@@ -1,0 +1,30 @@
+---
+Plugin: htklabel
+Homepage: http://cpran.net/plugins/htklabel
+Version: 0.0.1
+Maintainer:
+  - Cristopher Shulby <chrisshulby@gmail.com>
+  - José Joaquín Atria <jjatria@gmail.com>
+Depends:
+  praat: 5.4.16+
+  Plugins:
+    utils: 0.0.23+
+    strutils: 0.0.0+
+    printf: 0.0.3+
+Recommends:
+License: GPL3
+Readme: readme.md
+Description:
+  Short: Read and write HTK/HTS label files
+  Long: >
+    Label files used by HTK/HTS and related software packages represent a similar
+    data structure as a Praat TextGrid object. The scripts in this plugin allow
+    conversions to and from label files and TextGrid objects.
+
+    Multiple levels within a label file are mapped to multiple interval tiers
+    within a TextGrid object; while multiple alternatives result in the creation
+    of as many different TextGrid objects.
+
+    In the conversion from TextGrid to label files, only non-empty labels are
+    taken into account. Label files need a specified start and end time in each
+    line in order to be properly converted.

@@ -1,0 +1,240 @@
+# This script is part of the htklabel CPrAN plugin for Praat.
+# The latest version is available through CPrAN or at
+# <http://cpran.net/plugins/htklabel>
+#
+# The htklabel plugin is free software: you can redistribute it
+# and/or modify it under the terms of the GNU General Public
+# License as published by the Free Software Foundation, either
+# version 3 of the License, or (at your option) any later version.
+#
+# The htklabel plugin is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+# of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with htklabel. If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright 2017 Christopher Shulby, Jose Joaquin Atria
+
+#! ~~~ params
+#! in:
+#!   .mlf: Timestamp from the HTK label
+#! out:
+#!   .return: The equivalent time in seconds
+#! ~~~
+#!
+#! Convert a HTK/HTS label file timestamp to seconds.
+#!
+procedure mlf_time_to_seconds: .mlf
+    .return = .mlf / 1e7
+endproc
+
+#! ~~~ params
+#! in:
+#!   .time: A time in seconds
+#! out:
+#!   .return$: The equivalent time in HTk/HTS label timestamp format
+#! ~~~
+#!
+#! Convert a time in seconds to a timestamp suitable to be used in a HTK/HTS
+#! label file. The final timestamp is returned as a string zero-padded to a
+#! length of 9 characters.
+#!
+procedure seconds_to_mlf_time: .time
+    .return$ = string$(.time * 1e7 div 1)
+    while length(.return$) < 9
+        .return$ = "0" + .return$
+    endwhile
+    count = number(.return$) + 13750
+    where = number(right$(string$(count), 1)) = 5 or number(right$(string$(count), 1)) = 0
+        if where == 1
+            count = count
+        else                    
+            where = number(right$(string$(count), 1)) > 2.5
+            if where == 1
+                where = number(right$(string$(count), 1)) < 5
+                    if where == 1
+                        repeat
+                            count = count + 00001
+                        until number(right$(string$(count), 1)) = 5
+                    else
+                        where = number(right$(string$(count), 1)) < 7.5
+                            if where == 1
+                                repeat
+                                    count = count - 00001
+                                until number(right$(string$(count), 1)) = 5
+                            else
+                                where = number(right$(string$(count), 1)) < 9.9
+                                    if where == 1
+                                        repeat
+                                            count = count + 00001
+                                        until number(right$(string$(count), 1)) = 0
+                                    endif
+                            endif
+                    endif
+            else
+                where = number(right$(string$(number(seconds_to_mlf_time.return$) + 13750), 1)) > 0
+                    if where == 1
+                       repeat
+                           count = count - 00001
+                       until number(right$(string$(count), 1)) = 0
+                    endif
+            endif
+        endif
+    .return$ = string$(count)
+endproc
+
+
+#! ~~~ params
+#! out:
+#!   .hyp[]: The ID numbers of all generated hypotheses
+#!   .hypotheses: The total number of hypotheses
+#! selection:
+#!   in:
+#!     strings: 1
+#!   out:
+#!     textgrid: 0
+#! ~~~
+#!
+#! Read an HTK/HTS label file and convert it to a set of Praat TextGrid
+#! objects.
+#!
+#! Multiple alternatives within a label file will result in separate TextGrid
+#! objects, while multiple levels within each alternative will be mapped to
+#! individual tiers within each TextGrid.
+#!
+#! Since only interval tiers are generated at the moment, only label files
+#! with both start and end times are supported.
+#!
+procedure read_lab ()
+    .strings = selected("Strings")
+    .sound = numberOfSelected("Sound")
+
+    .hypotheses = 1
+    .textgrid = undefined
+
+    if .sound
+        .sound = selected("Sound")
+    endif
+
+    selectObject: .strings
+    .total_strings = Get number of strings
+
+    for .i to .total_strings
+        selectObject: .strings
+        .line$ = Get string: .i
+
+        if index_regex(.line$, "^\s*/#")
+            .hypotheses += 1
+            .textgrid = undefined
+        elsif index_regex(.line$, "^\s*#")
+            # bash-style comment. Are these valid?
+        else
+            @parse_lab_line: .line$
+            .start = parse_lab_line.start - 0.001375
+            .end   = parse_lab_line.end - 0.001375
+
+            if .start == undefined or .end == undefined
+                for .j to .hypotheses
+                    nocheck removeObject: .hyp[.j]
+                endfor
+                .hypotheses = 0
+                exitScript: "Cannot parse line #", .i, ":", newline$,
+                    ... tab$, .line$, newline$,
+                    ... "Start and end times are required", newline$
+            endif
+
+            if .textgrid == undefined
+                if .sound
+                    selectObject: .sound
+                    .textgrid = To TextGrid: "token", ""
+                else
+                    .textgrid = Create TextGrid: .start, .end, "token", ""
+                endif
+                #Rename: "HTK Labels"
+            else
+                selectObject: .textgrid
+                .old_end = Get end time
+
+                if .end > .old_end
+                    nocheck Extend time: .end - .old_end, "End"
+
+                    .tiers = Get number of tiers
+                    for .j to .tiers
+                        nocheck Remove boundary at time: .j, .old_end
+                    endfor
+                endif
+            endif
+
+            .hyp[.hypotheses] = .textgrid
+
+            for .t to parse_lab_line.levels
+                .tiers = Get number of tiers
+
+                if .t > .tiers
+                    Insert interval tier: 1, "level" + string$(.i)
+                endif
+
+                .tiers = Get number of tiers
+                .tier  = .tiers - .t + 1
+                .name$ = parse_lab_line.name$[.t]
+
+                nocheck Insert boundary: .tier, .start
+                if .t == 1
+                  nocheck Insert boundary: .tier, .end
+                endif
+
+                .interval = Get high interval at time: .tier, .start
+                Set interval text: .tier, .interval, .name$
+            endfor
+        else
+        endif
+    endfor
+
+    nocheck selectObject: undefined
+    for .i to .hypotheses
+        plusObject: .hyp[.i]
+    endfor
+    if .sound
+        plusObject: .sound
+    endif
+endproc
+
+#! ~~~ params
+#! in:
+#!   .line$: The line to parse
+#! out:
+#!   .start: The start time of the current line
+#!   .end:   The end time of the current line
+#!   .levels: The total number of levels found in the current line
+#!   .name$[]: An indexed variable with the names of the labels in each level
+#! ~~~
+#!
+#! Parse one line in a label file to extract timestamps, labels, scores, and
+#! comments. However, scores are currently ignored, and comments are not
+#! currently supported because of ambiguities in the documentation. And even
+#! if they weren't, they'd probably still be ignored.
+#!
+procedure parse_lab_line: .line$
+    .times$ = replace_regex$(.line$, "^\s*([0-9]+)\s+([0-9]+).*", "\1:\2", 1)
+    .names$ = replace_regex$(.line$, "^\s*[0-9]+\s+[0-9]+\s+", "", 1)
+
+    @mlf_time_to_seconds: number(replace_regex$(.times$, ":.*", "", 0))
+    .start = mlf_time_to_seconds.return
+    @mlf_time_to_seconds: number(replace_regex$(.times$, ".*:", "", 0))
+    .end = mlf_time_to_seconds.return
+
+    .i = 0
+    repeat
+      .i += 1
+
+      .tokens$ = replace_regex$(.names$, "^(\S+)(\s+[-+]?[0-9](\.[0-9]+)?(e[0-9]+)?)?", "\1'newline$'\2", 1)
+      .names$  = replace_regex$(.names$, "^(\S+)(\s+[-+]?[0-9](\.[0-9]+)?(e[0-9]+)?)?\s*", "", 1)
+
+      .name$[.i] =        replace_regex$(.tokens$,   "\n.*", "", 1)
+      .name$[.i] =        replace_regex$(.name$[.i], "^\s+", "", 1)
+      .score[.i] = number(replace_regex$(.tokens$,   ".*\n", "", 1))
+    until .names$ == "" or .i > 100
+    .levels = .i
+endproc
