@@ -1,30 +1,28 @@
-# This script is part of the htklabel CPrAN plugin for Praat.
-# The latest version is available through CPrAN or at
-# <http://cpran.net/plugins/htklabel>
+# This script is part of the htslabel CPrAN plugin for Praat.
 #
-# The htklabel plugin is free software: you can redistribute it
+# The htslabel plugin is free software: you can redistribute it
 # and/or modify it under the terms of the GNU General Public
 # License as published by the Free Software Foundation, either
 # version 3 of the License, or (at your option) any later version.
 #
-# The htklabel plugin is distributed in the hope that it will be
+# The htslabel plugin is distributed in the hope that it will be
 # useful, but WITHOUT ANY WARRANTY; without even the implied warranty
 # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with htklabel. If not, see <http://www.gnu.org/licenses/>.
+# along with htslabel. If not, see <http://www.gnu.org/licenses/>.
 #
 # Copyright 2017 Christopher Shulby, Jose Joaquin Atria
 
 #! ~~~ params
 #! in:
-#!   .mlf: Timestamp from the HTK label
+#!   .mlf: Timestamp from the HTS label
 #! out:
 #!   .return: The equivalent time in seconds
 #! ~~~
 #!
-#! Convert a HTK/HTS label file timestamp to seconds.
+#! Convert a HTS label file timestamp to seconds.
 #!
 procedure mlf_time_to_seconds: .mlf
     .return = .mlf / 1e7
@@ -34,10 +32,10 @@ endproc
 #! in:
 #!   .time: A time in seconds
 #! out:
-#!   .return$: The equivalent time in HTk/HTS label timestamp format
+#!   .return$: The equivalent time in HTS label timestamp format
 #! ~~~
 #!
-#! Convert a time in seconds to a timestamp suitable to be used in a HTK/HTS
+#! Convert a time in seconds to a timestamp suitable to be used in a HTS
 #! label file. The final timestamp is returned as a string zero-padded to a
 #! length of 9 characters.
 #!
@@ -46,43 +44,6 @@ procedure seconds_to_mlf_time: .time
     while length(.return$) < 9
         .return$ = "0" + .return$
     endwhile
-    count = number(.return$) + 13750
-    where = number(right$(string$(count), 1)) = 5 or number(right$(string$(count), 1)) = 0
-        if where == 1
-            count = count
-        else                    
-            where = number(right$(string$(count), 1)) > 2.5
-            if where == 1
-                where = number(right$(string$(count), 1)) < 5
-                    if where == 1
-                        repeat
-                            count = count + 00001
-                        until number(right$(string$(count), 1)) = 5
-                    else
-                        where = number(right$(string$(count), 1)) < 7.5
-                            if where == 1
-                                repeat
-                                    count = count - 00001
-                                until number(right$(string$(count), 1)) = 5
-                            else
-                                where = number(right$(string$(count), 1)) < 9.9
-                                    if where == 1
-                                        repeat
-                                            count = count + 00001
-                                        until number(right$(string$(count), 1)) = 0
-                                    endif
-                            endif
-                    endif
-            else
-                where = number(right$(string$(number(seconds_to_mlf_time.return$) + 13750), 1)) > 0
-                    if where == 1
-                       repeat
-                           count = count - 00001
-                       until number(right$(string$(count), 1)) = 0
-                    endif
-            endif
-        endif
-    .return$ = string$(count)
 endproc
 
 
@@ -97,7 +58,7 @@ endproc
 #!     textgrid: 0
 #! ~~~
 #!
-#! Read an HTK/HTS label file and convert it to a set of Praat TextGrid
+#! Read an HTS label file and convert it to a set of Praat TextGrid
 #! objects.
 #!
 #! Multiple alternatives within a label file will result in separate TextGrid
@@ -132,8 +93,8 @@ procedure read_lab ()
             # bash-style comment. Are these valid?
         else
             @parse_lab_line: .line$
-            .start = parse_lab_line.start - 0.001375
-            .end   = parse_lab_line.end - 0.001375
+            .start = parse_lab_line.start
+            .end   = parse_lab_line.end
 
             if .start == undefined or .end == undefined
                 for .j to .hypotheses
@@ -152,7 +113,7 @@ procedure read_lab ()
                 else
                     .textgrid = Create TextGrid: .start, .end, "token", ""
                 endif
-                #Rename: "HTK Labels"
+                #Rename: "HTS Labels"
             else
                 selectObject: .textgrid
                 .old_end = Get end time

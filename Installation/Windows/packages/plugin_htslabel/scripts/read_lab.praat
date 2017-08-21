@@ -20,9 +20,7 @@
 include ../procedures/read.proc
 include ../../plugin_utils/procedures/check_filename.proc
 
-#writeInfoLine: ""
-
-form Read HTK label file...
+form Read HTS label file...
     sentence Path_to_label_(optional)
     comment  Leave paths empty for GUI selectors
     boolean  Use_sound_file yes
@@ -69,7 +67,6 @@ else
 			    else
 		                if dir_defined = 0
 			            #Define dir
-		                    #appendInfoLine:"here_1"
 			            inDir$ = chooseDirectory$: "Choose the folder containing your .lab files"
 			            dirObject = Create Strings as tokens: inDir$
 		                    dir_defined = 1
@@ -112,7 +109,7 @@ else
 		        if clicked = 1
 		            selectObject: i
 		            file_name$ = selected$ ("TextGrid", 1)
-		            runScript: "write_lab_comments.praat", inDir$ + "/" + file_name$
+		            runScript: "write_lab.praat", inDir$ + "/" + file_name$ + ".lab"
 		        else
 		            Remove
 		        endif
@@ -147,7 +144,8 @@ else
 	    endif
 	endfor
 endif
-@checkFilename: path_to_label$, "Select HTK label file..."
+
+@checkFilename: path_to_label$, "Select HTS label file..."
 path_to_label$ = checkFilename.name$
 strings = Read Strings from raw text file: path_to_label$
 
@@ -172,52 +170,14 @@ if discard_context
     nocheck plusObject: sound
 endif
 
-#Import pitch marks from comments
 object_name= selected("TextGrid")
 string_object = object_name-2
 audioFile = string_object + 1
 tG = string_object + 2
-pointProc = string_object + 3
 selectObject: audioFile
 lengthOfSound = Get total duration
-tier =  Create empty PointProcess: "pitchTier", 0.00, lengthOfSound
 
-selectObject: string_object
-pitch_line$ = Get string: 4
-pitch_line_parsed = Create Strings as tokens: pitch_line$
-numberOfStrings = Get number of strings
-parsedPitchMarks = string_object + 4
-for stringNumber from 1 to numberOfStrings
-    selectObject: parsedPitchMarks
-    mark$ = Get string: stringNumber
-    markNum = number (mark$)
-
-    if markNum = undefined
-	# Take some exceptional action.
-    else
-	# Take the normal action.
-	where = startsWith (mark$, "-")
-	if where == 1
-	    mark$ = replace$ (mark$, "-", "", 0)
-	    selectObject: pointProc
-	    mark$ = string$(number(mark$) / 1e7)
-	    markNum = number (mark$) - 0.001375
-	    Add point: markNum
-
-	else
-	    selectObject: pointProc
-	    mark$ = string$(number(mark$) / 1e7)
-	    markNum = number (mark$) - 0.001375
-	    Add point: markNum
-	endif
-    endif
-endfor
-
-#Select and display in two windows
-#1. spectrogram with the correct segmentations (the waveform will be incorrectly syncd with pulses)
-#2. the synchronized waveform and CPqD pulses 
 selectObject: tG, audioFile
 View & Edit
 selectObject: tG
-
 
