@@ -2,10 +2,7 @@
 htslabel for Praat adapted for HTS users from the CPrAN plugin htklabel.
 
 This is the README for htslabel for Praat adapted for HTS users from the CPrAN plugin htklabel.  
-    
 
-  
-# plugin_htklabel  
   
 A plugin for Praat to read information from a HTS label files.  
   
