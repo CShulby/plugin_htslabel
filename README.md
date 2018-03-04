@@ -1,11 +1,21 @@
 This is the README for htslabel for Praat adapted for HTS users from the CPrAN plugin htklabel.
 The latest version of that plugin is available through CPrAN or at <http://cpran.net/plugins/htklabel>  
   
-# plugin_htklabel  
+# plugin_htslabel  
   
 A plugin for Praat to read information from a HTK / HTS label file and  
 Master Label Files.  
-  
+
+
+This software is 100% free to use as you please, but I do ask that you cite its use in any papers:
+
+@software{htslabel,
+  author = {Shulby, Christopher and Atria, Jose},
+  title = {htslabel},
+  url = {https://github.com/CShulby/plugin_htslabel},
+  year = {2017}
+}
+
 ## Installation:  
 
 This plugin requires some of the existing plugins distributed through CPrAN.  
