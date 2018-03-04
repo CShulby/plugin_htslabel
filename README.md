@@ -10,10 +10,15 @@ Master Label Files.
 This software is 100% free to use as you please, but I do ask that you cite its use in any papers:
 
 @software{htslabel,
+
   author = {Shulby, Christopher and Atria, Jose},
+  
   title = {htslabel},
+  
   url = {https://github.com/CShulby/plugin_htslabel},
+  
   year = {2017}
+  
 }
 
 ## Installation:  
